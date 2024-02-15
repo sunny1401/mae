@@ -25,7 +25,6 @@ class MaskedAutoencoderViT(nn.Module):
     def __init__(
             self, 
             patch_args: Dict,
-            img_size=224, 
             patch_size=16, 
             in_chans=3,
             embed_dim=1024, 
@@ -35,7 +34,13 @@ class MaskedAutoencoderViT(nn.Module):
             decoder_depth=8, 
             decoder_num_heads=16,
             mlp_ratio=4., 
-            norm_layer=nn.LayerNorm, 
+            act_layer: nn.Module = nn.GELU,
+            norm_layer: nn.Module =nn.LayerNorm, 
+            qkv_bias: bool = True,
+            qkv_norm: bool = None,
+            proj_drop: float = 0.,
+            attn_drop: float = 0.,
+            drop_path_rate: float = 0.1,
             norm_pix_loss=False,
             patch_module: nn.Module = PatchEmbed,
             position_module: nn.Module | None = None,
@@ -57,7 +62,18 @@ class MaskedAutoencoderViT(nn.Module):
             self.pos_embed = position_module(**position_args)
         self.pos_class = position_module is not None
         self.blocks = nn.ModuleList([
-            Block(embed_dim, num_heads, mlp_ratio, qkv_bias=True, qk_scale=None, norm_layer=norm_layer)
+            Block(
+                act_layer=act_layer,
+                dim=embed_dim, 
+                num_heads=num_heads, 
+                mlp_ratio=mlp_ratio, 
+                qkv_bias=qkv_bias, 
+                qk_norm=qkv_norm,
+                proj_drop=proj_drop,
+                attn_drop=attn_drop,
+                drop_path=drop_path_rate,
+                norm_layer=norm_layer
+            )
             for i in range(depth)])
         self.norm = norm_layer(embed_dim)
         # --------------------------------------------------------------------------
