@@ -63,7 +63,7 @@ class MaskedAutoencoderViT(nn.Module):
             decoder_num_heads=16,
             mlp_ratio=4., 
             act_layer: nn.Module = nn.GELU,
-            norm_layer: nn.Module =nn.LayerNorm, 
+            norm_layer: nn.Module =partial(nn.LayerNorm, eps=1e-6), 
             qkv_bias: bool = True,
             qkv_norm: bool = None,
             proj_drop: float = 0.,
@@ -194,6 +194,7 @@ class MaskedAutoencoderViT(nn.Module):
         x = torch.einsum('nhwpqc->nchpwq', x)
         imgs = x.reshape(shape=(x.shape[0], self._in_channels, h * p, h * p))
         return imgs
+
 
     def forward_encoder(self, x, mask_ratio):
         # embed patches
