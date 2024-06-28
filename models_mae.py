@@ -194,7 +194,24 @@ class MaskedAutoencoderViT(nn.Module):
         x = torch.einsum('nhwpqc->nchpwq', x)
         imgs = x.reshape(shape=(x.shape[0], self._in_channels, h * p, h * p))
         return imgs
+    
+    def forward_features(self, x, return_for_segmentation: bool = True):
+        x = self.patch_embed(x)
+        # add pos embed w/o cls token
+        x = x + self.pos_embed[:, 1:, :]
+        # append cls token
+        cls_token = self.cls_token + self.pos_embed[:, :1, :]
+        cls_tokens = cls_token.expand(x.shape[0], -1, -1)
+        x = torch.cat((cls_tokens, x), dim=1)
 
+        # apply Transformer blocks
+        for blk in self.blocks:
+            x = blk(x)
+        x = self.norm(x)
+        if return_for_segmentation:
+            return x[:, 1:, :]
+        else:
+            return x[:, 0]
 
     def forward_encoder(self, x, mask_ratio):
         # embed patches
@@ -215,6 +232,7 @@ class MaskedAutoencoderViT(nn.Module):
         for blk in self.blocks:
             x = blk(x)
         x = self.norm(x)
+
 
         return x, mask, ids_restore
 
